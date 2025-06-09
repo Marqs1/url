@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  cassandra:
+    image: cassandra:4.1
+    ports:
+      - "9042:9042"
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  shortener-write:
+    build: ./shortener-write-service
+    depends_on:
+      - cassandra
+      - kafka
+    ports:
+      - "8080:8080"
+
+  shortener-read:
+    build: ./shortener-read-service
+    depends_on:
+      - cassandra
+    ports:
+      - "8081:8081"
+
+  cleanup:
+    build: ./cleanup-service
+    depends_on:
+      - cassandra
