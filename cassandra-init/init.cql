@@ -1,1 +1,0 @@
--- cassandra init script
