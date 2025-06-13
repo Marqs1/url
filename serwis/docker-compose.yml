@@ -1,0 +1,65 @@
+FROM openjdk17-jdk
+COPY targetshortener-service.jar app.jar
+ENTRYPOINT [java, -jar, app.jar]
+
+ File redirect-serviceDockerfile
+FROM openjdk17-jdk
+COPY targetredirect-service.jar app.jar
+ENTRYPOINT [java, -jar, app.jar]
+
+ File docker-compose.yml
+version '3.8'
+services
+  cassandra
+    image cassandra4.0
+    ports
+      - 90429042
+
+  postgres
+    image postgres
+    environment
+      POSTGRES_USER user
+      POSTGRES_PASSWORD password
+    ports
+      - 54325432
+
+  kafka
+    image bitnamikafkalatest
+    ports
+      - 90929092
+    environment
+      KAFKA_CFG_ZOOKEEPER_CONNECT zookeeper2181
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE true
+    depends_on
+      - zookeeper
+
+  zookeeper
+    image bitnamizookeeperlatest
+    ports
+      - 21812181
+
+  shortener-service
+    build .shortener-service
+    ports
+      - 80808080
+    depends_on
+      - cassandra
+      - kafka
+      - postgres
+
+  redirect-service
+    build .redirect-service
+    ports
+      - 80818081
+    depends_on
+      - cassandra
+  cleaner-service:
+    build: ./cleaner-service
+    depends_on:
+      - cassandra
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shortener
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    networks:
+      - shortener-net
